@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+
+  <meta charset="UTF-8">
+  <title>LC Feature Flag</title>
+  
+  
+<style>
+*,
+*:before,
+*:after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #ffebeb;
+  background: rgba(240, 248, 255, 0.9);
+  overflow: hidden;
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: linear 2s, transform 0.2s;
+}
+
+.bubble:hover {
+  transform: scale(1.7);
+}
+
+.bubble--bust {
+  transform: scale(1.8);
+}
+</style>
+
+</head>
+
+<body translate="no" >
+  <div id="app">
+</div>
+    
+
+<script src="https://unpkg.com/launchdarkly-js-client-sdk@2"></script>
+
+
+<script id="rendered-js" >
+	const root = document.querySelector("#app");
+	let { innerHeight, innerWidth } = window;
+		console.log(innerHeight, innerWidth);
+	if (innerHeight < 300) {
+  		innerHeight = 350;
+	}
+	if (innerWidth < 300) {
+  		innerWidth = 750;
+	}
+
+class Bubble{
+
+  constructor(color) {
+    this.bubbleSpan = undefined;
+    this.handleNewBubble();
+    
+    if(color == "blue"){
+    //this.color = this.randomColor();
+		this.color = `rgba(0,0,255,0.9)`;
+		this.myColor = "blue";
+	} else{
+		this.myColor = "green";
+		this.color = `rgba(0,255,0,0.5)`;
+	}
+	
+    this.posY = 300; 
+    this.posX = 300; 
+    this.bubbleSpan.style.top = this.posY + "px";
+    this.bubbleSpan.style.left = this.posX + "px";
+    this.height = 60;
+    this.width = this.height;
+
+  }
+
+
+  handleNewBubble() {
+    this.bubbleSpan = document.createElement("span");
+    this.bubbleSpan.classList.add("bubble");
+    root.append(this.bubbleSpan);
+    this.handlePosition();
+  }
+
+  handlePosition() {
+    const randomY = this.randomNumber(60, -60);
+    const randomX = this.randomNumber(60, -60);
+
+    this.bubbleSpan.style.backgroundColor = this.color;
+    this.bubbleSpan.style.height = this.height + "px";
+    this.bubbleSpan.style.width = this.height + "px";
+
+    this.posY = this.randomNumber(innerHeight - 20, 20);
+    this.posX = this.randomNumber(innerWidth - 20, 20);
+
+    this.bubbleSpan.style.top = this.posY + "px";
+    this.bubbleSpan.style.left = this.posX + "px";
+
+    const randomSec = this.randomNumber(4000, 200);
+   
+    setTimeout(this.handlePosition.bind(this), randomSec); // calling for re-position of bubble
+	
+  }
+  
+  randomNumber(max, min) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
+  bubbleEnd(removingTime = 0) {
+    setTimeout(
+    () => {
+      this.classList.add("bubble--bust");
+    },
+    removingTime === 0 ? removingTime : removingTime - 100);
+    setTimeout(() => {
+      this.remove();
+    }, removingTime);
+  }
+
+}
+
+var user = {
+    firstName: 'Luis',
+    lastName: 'Rodriguez',
+    key: 'demo',
+    custom: {
+      groups: 'beta_testers'
+    }
+  };
+
+
+
+var bubbleArray = new Array();
+var ldclient;
+var shouldShow;
+
+const myInterval = window.setInterval(function() {
+
+ldclient = LDClient.initialize('6047bcfda7a8d30d12804f5c', user);
+
+ldclient.on('ready', function() {
+  console.log("It's now safe to request feature flags");
+  shouldShow = ldclient.variation("luis-test", false);
+});
+
+console.log(shouldShow);
+
+  if (shouldShow === true) {
+		bubbleArray.push(new Bubble("blue"));
+  } else if (shouldShow === 'off') {
+  	bubbleArray.push(new Bubble("green"));
+	for( var i = 0; i < bubbleArray.length; i++){
+		if(bubbleArray[i].myColor == "blue"){
+			bubbleArray[i].bubbleEnd.call(bubbleArray[i].bubbleSpan, bubbleArray[i].randomNumber(6000, 3000));
+		}
+	}
+
+  } else {
+    bubbleArray.push(new Bubble("green"));
+	for( var i = 0; i < bubbleArray.length; i++){
+		if(bubbleArray[i].myColor == "blue"){
+			bubbleArray[i].bubbleEnd.call(bubbleArray[i].bubbleSpan, bubbleArray[i].randomNumber(6000, 3000));
+		}
+	}
+  }
+
+}, 2000);
